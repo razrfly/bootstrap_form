@@ -1,34 +1,77 @@
-require 'test_helper'
+require_relative "./test_helper"
 
 class BootstrapOtherComponentsTest < ActionView::TestCase
   include BootstrapForm::Helper
 
-  def setup
-    setup_test_fixture
-  end
+  setup :setup_test_fixture
 
   test "static control" do
     output = @horizontal_builder.static_control :email
 
-    expected = %{<div class="form-group"><label class="control-label col-sm-2 required" for="user_email">Email</label><div class="col-sm-10"><p class="form-control-static">steve@example.com</p></div></div>}
+    expected = <<-HTML.strip_heredoc
+      <div class="form-group row">
+        <label class="col-form-label col-sm-2 required" for="user_email">Email</label>
+        <div class="col-sm-10">
+          <input class="form-control-plaintext" id="user_email" name="user[email]" readonly="readonly" type="text" value="steve@example.com"/>
+        </div>
+      </div>
+    HTML
+    assert_equivalent_xml expected, output
+  end
+
+  test "static control can have custom_id" do
+    output = @horizontal_builder.static_control :email, id: 'custom_id'
+
+    expected = <<-HTML.strip_heredoc
+      <div class="form-group row">
+        <label class="col-form-label col-sm-2 required" for="custom_id">Email</label>
+        <div class="col-sm-10">
+          <input class="form-control-plaintext" id="custom_id" name="user[email]" readonly="readonly" type="text" value="steve@example.com"/>
+        </div>
+      </div>
+    HTML
     assert_equivalent_xml expected, output
   end
 
   test "static control doesn't require an actual attribute" do
-    output = @horizontal_builder.static_control nil, label: "My Label" do
-      "this is a test"
-    end
+    output = @horizontal_builder.static_control nil, label: "My Label", value: "this is a test"
 
-    expected = %{<div class="form-group"><label class="control-label col-sm-2" for="user_">My Label</label><div class="col-sm-10"><p class="form-control-static">this is a test</p></div></div>}
+    expected = <<-HTML.strip_heredoc
+      <div class="form-group row">
+        <label class="col-form-label col-sm-2" for="user_">My Label</label>
+        <div class="col-sm-10">
+          <input class="form-control-plaintext" id="user_" name="user[]" readonly="readonly" type="text" value="this is a test"/>
+        </div>
+      </div>
+    HTML
     assert_equivalent_xml expected, output
   end
 
   test "static control doesn't require a name" do
-    output = @horizontal_builder.static_control label: "Custom Label" do
-      "Custom Control"
-    end
+    output = @horizontal_builder.static_control label: "Custom Label", value: "Custom Control"
 
-    expected = %{<div class="form-group"><label class="control-label col-sm-2" for="user_">Custom Label</label><div class="col-sm-10"><p class="form-control-static">Custom Control</p></div></div>}
+    expected = <<-HTML.strip_heredoc
+      <div class="form-group row">
+        <label class="col-form-label col-sm-2" for="user_">Custom Label</label>
+        <div class="col-sm-10">
+          <input class="form-control-plaintext" id="user_" name="user[]" readonly="readonly" type="text" value="Custom Control"/>
+        </div>
+      </div>
+    HTML
+    assert_equivalent_xml expected, output
+  end
+
+  test "static control won't overwrite a control_class that is passed by the user" do
+    output = @horizontal_builder.static_control :email, control_class: "test_class"
+
+    expected = <<-HTML.strip_heredoc
+      <div class="form-group row">
+        <label class="col-form-label col-sm-2 required" for="user_email">Email</label>
+        <div class="col-sm-10">
+          <input class="test_class form-control-plaintext" id="user_email" name="user[email]" readonly="readonly" type="text" value="steve@example.com"/>
+        </div>
+      </div>
+    HTML
     assert_equivalent_xml expected, output
   end
 
@@ -37,8 +80,13 @@ class BootstrapOtherComponentsTest < ActionView::TestCase
       "this is a test"
     end
 
-    expected = %{<div class="form-group"><label class="control-label col-sm-2 required" for="user_email">Email</label><div class="col-sm-10">this is a test</div></div>}
-    assert_equal expected, output
+    expected = <<-HTML.strip_heredoc
+      <div class="form-group row">
+        <label class="col-form-label col-sm-2 required" for="user_email">Email</label>
+        <div class="col-sm-10">this is a test</div>
+      </div>
+    HTML
+    assert_equivalent_xml expected, output
   end
 
   test "custom control doesn't require an actual attribute" do
@@ -46,8 +94,13 @@ class BootstrapOtherComponentsTest < ActionView::TestCase
       "this is a test"
     end
 
-    expected = %{<div class="form-group"><label class="control-label col-sm-2" for="user_">My Label</label><div class="col-sm-10">this is a test</div></div>}
-    assert_equal expected, output
+    expected = <<-HTML.strip_heredoc
+      <div class="form-group row">
+        <label class="col-form-label col-sm-2" for="user_">My Label</label>
+        <div class="col-sm-10">this is a test</div>
+      </div>
+    HTML
+    assert_equivalent_xml expected, output
   end
 
   test "custom control doesn't require a name" do
@@ -55,17 +108,28 @@ class BootstrapOtherComponentsTest < ActionView::TestCase
       "Custom Control"
     end
 
-    expected = %{<div class="form-group"><label class="control-label col-sm-2" for="user_">Custom Label</label><div class="col-sm-10">Custom Control</div></div>}
-    assert_equal expected, output
+    expected = <<-HTML.strip_heredoc
+      <div class="form-group row">
+        <label class="col-form-label col-sm-2" for="user_">Custom Label</label>
+        <div class="col-sm-10">Custom Control</div>
+      </div>
+    HTML
+    assert_equivalent_xml expected, output
+  end
+
+  test "regular button uses proper css classes" do
+    expected = %{<button class="btn btn-secondary" name="button" type="submit"><span>I'm HTML!</span> in a button!</button>}
+    assert_equivalent_xml expected,
+                          @builder.button("<span>I'm HTML!</span> in a button!".html_safe)
   end
 
   test "submit button defaults to rails action name" do
-    expected = %{<input class="btn btn-default" name="commit" type="submit" value="Create User" />}
+    expected = %{<input class="btn btn-secondary" name="commit" type="submit" value="Create User" />}
     assert_equivalent_xml expected, @builder.submit
   end
 
   test "submit button uses default button classes" do
-    expected = %{<input class="btn btn-default" name="commit" type="submit" value="Submit Form" />}
+    expected = %{<input class="btn btn-secondary" name="commit" type="submit" value="Submit Form" />}
     assert_equivalent_xml expected, @builder.submit("Submit Form")
   end
 
@@ -77,6 +141,21 @@ class BootstrapOtherComponentsTest < ActionView::TestCase
   test "primary button uses proper css classes" do
     expected = %{<input class="btn btn-primary" name="commit" type="submit" value="Submit Form" />}
     assert_equivalent_xml expected, @builder.primary("Submit Form")
+  end
+
+  test "primary button can render as HTML button" do
+    expected = %{<button class="btn btn-primary" name="button" type="submit"><span>I'm HTML!</span> Submit Form</button>}
+    assert_equivalent_xml expected,
+                          @builder.primary("<span>I'm HTML!</span> Submit Form".html_safe,
+                                           render_as_button: true)
+  end
+
+  test "primary button with content block renders as HTML button" do
+    output = @builder.primary do
+      "<span>I'm HTML!</span> Submit Form".html_safe
+    end
+    expected = %{<button class="btn btn-primary" name="button" type="submit"><span>I'm HTML!</span> Submit Form</button>}
+    assert_equivalent_xml expected, output
   end
 
   test "override primary button classes" do

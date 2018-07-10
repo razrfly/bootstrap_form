@@ -1,22 +1,28 @@
-[![Build Status](https://travis-ci.org/bootstrap-ruby/rails-bootstrap-forms.svg?branch=master)](https://travis-ci.org/bootstrap-ruby/rails-bootstrap-forms)
-[![Gem Version](https://badge.fury.io/rb/bootstrap_form.svg)](http://badge.fury.io/rb/bootstrap_form)
+⚠️ **This documentation is for the master branch, which is not yet stable and targets Bootstrap v4.** If you are using Bootstrap v3, refer to the stable [legacy-2.7](https://github.com/bootstrap-ruby/bootstrap_form/tree/legacy-2.7) branch.
 
-# Rails Bootstrap Forms
+---
 
-**Rails Bootstrap Forms** is a rails form builder that makes it super easy to integrate
-twitter bootstrap-style forms into your rails application.
+# bootstrap_form
+
+[![Build Status](https://travis-ci.org/bootstrap-ruby/bootstrap_form.svg?branch=master)](https://travis-ci.org/bootstrap-ruby/bootstrap_form)
+[![Gem Version](https://badge.fury.io/rb/bootstrap_form.svg)](https://rubygems.org/gems/bootstrap_form)
+
+**bootstrap_form** is a Rails form builder that makes it super easy to integrate
+Bootstrap v4-style forms into your Rails application.
 
 ## Requirements
 
-* Ruby 1.9+
-* Rails 4.0+
-* Twitter Bootstrap 3.0+
+* Ruby 2.2.2+
+* Rails 5.0+ (Rails 5.1+ for `bootstrap_form_with`)
+* Bootstrap 4.0.0+
 
 ## Installation
 
 Add it to your Gemfile:
 
-`gem 'bootstrap_form'`
+```ruby
+gem "bootstrap_form", ">= 4.0.0.alpha1"
+```
 
 Then:
 
@@ -55,20 +61,14 @@ This generates the following HTML:
     <label for="user_password">Password</label>
     <input class="form-control" id="user_password" name="user[password]" type="password">
   </div>
-  <div class="checkbox">
-    <label for="user_remember_me">
-      <input name="user[remember_me]" type="hidden" value="0">
-      <input id="user_remember_me" name="user[remember_me]" type="checkbox" value="1"> Remember me
-    </label>
+  <div class="form-check">
+    <input name="user[remember_me]" type="hidden" value="0">
+    <input class="form-check-input" id="user_remember_me" name="user[remember_me]" type="checkbox" value="1">
+    <label class="form-check-label" for="user_remember_me">Remember me</label>
   </div>
-  <input class="btn btn-default" name="commit" type="submit" value="Log In">
+  <input class="btn btn-secondary" name="commit" type="submit" value="Log In">
 </form>
 ```
-
-### Nested Forms
-
-In order to active [nested_form](https://github.com/ryanb/nested_form) support,
-use `bootstrap_nested_form_for` instead of `bootstrap_form_for`.
 
 ### bootstrap_form_tag
 
@@ -80,6 +80,53 @@ If your form is not backed by a model, use the `bootstrap_form_tag`. Usage of th
   <%= f.submit %>
 <% end %>
 ```
+
+### `bootstrap_form_with` (Rails 5.1+)
+
+Note that `form_with` in Rails 5.1 does not add IDs to form elements and labels by default, which are both important to Bootstrap markup. This behavior is corrected in Rails 5.2.
+
+To get started, just use the `bootstrap_form_with` helper in place of `form_with`. Here's an example:
+
+```erb
+<%= bootstrap_form_with(model: @user, local: true) do |f| %>
+  <%= f.email_field :email %>
+  <%= f.password_field :password %>
+  <%= f.check_box :remember_me %>
+  <%= f.submit "Log In" %>
+<% end %>
+```
+
+This generates:
+
+```html
+<form role="form" action="/users" accept-charset="UTF-8" method="post">
+  <input name="utf8" type="hidden" value="&#x2713;" />
+  <div class="form-group">
+    <label class="required" for="user_email">Email</label>
+    <input class="form-control" type="email" value="steve@example.com" name="user[email]" />
+  </div>
+  <div class="form-group">
+    <label for="user_password">Password</label>
+    <input class="form-control" type="password" name="user[password]" />
+    <small class="form-text text-muted">A good password should be at least six characters long</small>
+  </div>
+  <div class="form-check">
+    <input name="user[remember_me]" type="hidden" value="0">
+    <input class="form-check-input" id="user_remember_me" name="user[remember_me]" type="checkbox" value="1">
+    <label class="form-check-label" for="user_remember_me">Remember me</label>
+  </div>
+  <input type="submit" name="commit" value="Log In" class="btn btn-secondary" data-disable-with="Log In" />
+</form>
+```
+
+`bootstrap_form_with` supports both the `model:` and `url:` use cases
+in `form_with`.
+
+`form_with` has some important differences compared to `form_for` and `form_tag`, and these differences apply to `bootstrap_form_with`. A good summary of the differences can be found at: https://m.patrikonrails.com/rails-5-1s-form-with-vs-old-form-helpers-3a5f72a8c78a, or in the [Rails documentation](api.rubyonrails.org).
+
+### Future Compatibility
+
+The Rails team has [suggested](https://github.com/rails/rails/issues/25197) that `form_for` and `form_tag` may be deprecated and then removed in future versions of Rails. `bootstrap_form` will continue to support `bootstrap_form_for` and `bootstrap_form_tag` as long as Rails supports `form_for` and `form_tag`.
 
 ## Form Helpers
 
@@ -115,6 +162,8 @@ This gem wraps the following Rails form helpers:
 * time_zone_select
 * url_field
 * week_field
+* submit
+* button
 
 These helpers accept the same options as the standard Rails form helpers, with
 a few extra options:
@@ -138,6 +187,12 @@ To add custom classes to the field's label:
 
 ```erb
 <%= f.text_field :email, label_class: "custom-class" %>
+```
+
+Or you can add the label as input placeholder instead (this automatically hides the label):
+
+```erb
+<%= f.text_field :email, label_as_placeholder: true %>
 ```
 
 #### Required Fields
@@ -166,7 +221,7 @@ In cases where this behavior is undesirable, use the `skip_required` option:
 
 ### Input Elements / Controls
 
-To specify the class of the generated input, use the `control_class` option:
+To specify the class of the generated input tag, use the `control_class` option:
 
 ```erb
 <%= f.text_field :email, control_class: "custom-class" %>
@@ -190,30 +245,21 @@ en:
         password: "A good password should be at least six characters long"
 ```
 
+Help translations containing HTML should follow the convention of appending `_html` to the name:
+
+```yml
+en:
+  activerecord:
+    help:
+      user:
+        password_html: "A <strong>good</strong> password should be at least six characters long"
+```
+
 If your model name has multiple words (like `SuperUser`), the key on the
 translation file should be underscored (`super_user`).
 
 You can override help translations for a particular field by passing the `help`
 option or turn them off completely by passing `help: false`.
-
-### Icons
-
-To add an icon to a field, use the `icon` option and pass the icon name
-*without* the 'glyphicon' prefix:
-
-```erb
-<%= f.text_field :login, icon: "user" %>
-```
-
-This automatically adds the `has-feedback` class to the `form-group`:
-
-```html
-<div class="form-group has-feedback">
-  <label class="control-label" for="user_login">Login</label>
-  <input class="form-control" id="user_login" name="user[login]" type="text" />
-  <span class="glyphicon glyphicon-user form-control-feedback"></span>
-</div>
-```
 
 ### Prepending and Appending Inputs
 
@@ -227,10 +273,10 @@ You can also prepend and append buttons. Note: The buttons must contain the
 `btn` class to generate the correct markup.
 
 ```erb
-<%= f.text_field :search, append: link_to("Go", "#", class: "btn btn-default") %>
+<%= f.text_field :search, append: link_to("Go", "#", class: "btn btn-secondary") %>
 ```
 
-To add a class to the input group wrapper, use `:input_group_class` option.
+To add a class to the input group wrapper, use the `:input_group_class` option.
 
 ```erb
 <%= f.email_field :email, append: f.primary('Subscribe'), input_group_class: 'input-group-lg' %>
@@ -249,7 +295,7 @@ Which produces the following output:
 
 ```erb
 <div class="form-group has-warning" data-foo="bar">
-  <label class="control-label" for="user_name">Id</label>
+  <label class="form-control-label" for="user_name">Id</label>
   <input class="form-control" id="user_name" name="user[name]" type="text">
 </div>
 ```
@@ -261,7 +307,7 @@ You still can use `wrapper_class` option to set only a css class. This is just a
 Our select helper accepts the same arguments as the [default Rails helper](http://api.rubyonrails.org/classes/ActionView/Helpers/FormOptionsHelper.html#method-i-select). Here's an example of how you pass both options and html_options hashes:
 
 ```erb
-<%= f.select :product, [[1, "Apple"], [2, "Grape"]], { label: "Choose your favorite fruit:" }, { class: "selectpicker" } %>
+<%= f.select :product, [["Apple", 1], ["Grape", 2]], { label: "Choose your favorite fruit:" }, { class: "selectpicker",  wrapper: { class: 'has-warning', data: { foo: 'bar' } } } %>
 ```
 
 #### Collection select on an association
@@ -317,7 +363,7 @@ To display checkboxes and radios inline, pass the `inline: true` option:
 
 #### Collections
 
-BootstrapForms also provides helpers that automatically creates the
+`bootstrap_form` also provides helpers that automatically creates the
 `form_group` and the `radio_button`s or `check_box`es for you:
 
 ```erb
@@ -339,13 +385,13 @@ You can create a static control like this:
 <%= f.static_control :email %>
 ```
 
-Here's the output:
+Here's the output for a horizontal layout:
 
 ```html
 <div class="form-group">
-  <label class="col-sm-2 control-label" for="user_email">Email</label>
+  <label class="col-sm-2 form-control-label" for="user_email">Email</label>
   <div class="col-sm-10">
-    <p class="form-control-static">test@email.com</p>
+    <input class="form-control-plaintext" id="user_email" name="user[email]" readonly="readonly" type="text" value="test@email.com"/>
   </div>
 </div>
 ```
@@ -363,12 +409,12 @@ You can also create a static control that isn't based on a model attribute:
 The multiple selects that the date and time helpers (`date_select`,
 `time_select`, `datetime_select`) generate are wrapped inside a
 `div.rails-bootstrap-forms-[date|time|datetime]-select` tag. This is because
-Bootstrap automatically stylizes ours controls as `block`s. This wrapper fix
+Bootstrap automatically styles our controls as `block`s. This wrapper fixes
 this defining these selects as `inline-block` and a width of `auto`.
 
 ### Submit Buttons
 
-The `btn btn-default` css classes are automatically added to your submit
+The `btn btn-secondary` css classes are automatically added to your submit
 buttons.
 
 ```erb
@@ -386,6 +432,26 @@ You can specify your own classes like this:
 
 ```erb
 <%= f.submit "Log In", class: "btn btn-success" %>
+```
+
+If the `primary` helper receives a `render_as_button: true` option or a block,
+it will be rendered as an HTML button, instead of an input tag. This allows you
+to specify HTML content and styling for your buttons (such as adding
+illustrative icons to them). For example, the following statements
+
+```erb
+<%= f.primary "Save changes <span class='fa fa-save'></span>".html_safe, render_as_button: true %>
+
+<%= f.primary do
+      concat 'Save changes '
+      concat content_tag(:span, nil, class: 'fa fa-save')
+    end %>
+```
+
+are equivalent, and each of them both be rendered as
+
+```html
+<button name="button" type="submit" class="btn btn-primary">Save changes <span class="fa fa-save"></span></button>
 ```
 
 ### Accessing Rails Form Helpers
@@ -459,7 +525,7 @@ The `label_col` and `control_col` css classes can also be changed per control:
 
 ### Custom Field Layout
 
-The `layout` can be overridden per field:
+The form-level `layout` can be overridden per field, unless the form-level layout was `inline`:
 
 ```erb
 <%= bootstrap_form_for(@user, layout: :horizontal) do |f| %>
@@ -472,19 +538,34 @@ The `layout` can be overridden per field:
 <% end %>
 ```
 
-## Validation & Errors
+A form-level `layout: :inline` can't be overridden because of the way Bootstrap 4 implements in-line layouts. One possible work-around is to leave the form-level layout as default, and specify the individual fields as `layout: :inline`, except for the fields(s) that should be other than in-line.
+
+### Custom Form Element Styles
+
+The `custom` option can be used to replace the browser default styles for check boxes and radio buttons with dedicated Bootstrap styled form elements. Here's an example:
+
+```erb
+<%= bootstrap_form_for(@user) do |f| %>
+  <%= f.email_field :email %>
+  <%= f.password_field :password %>
+  <%= f.check_box :remember_me, custom: true %>
+  <%= f.submit "Log In" %>
+<% end %>
+```
+
+## Validation and Errors
 
 ### Inline Errors
 
-By default, fields that have validation errors will outlined in red and the
+By default, fields that have validation errors will be outlined in red and the
 error will be displayed below the field. Rails normally wraps the fields in a
 div (field_with_errors), but this behavior is suppressed. Here's an example:
 
 ```html
-<div class="form-group has-error">
-  <label class="control-label" for="user_email">Email</label>
-  <input class="form-control" id="user_email" name="user[email]" type="email" value="">
-  <span class="help-block">can't be blank</span>
+<div class="form-group">
+  <label class="form-control-label" for="user_email">Email</label>
+  <input class="form-control is-invalid" id="user_email" name="user[email]" type="email" value="">
+  <small class="invalid-feedback">can't be blank</small>
 </div>
 ```
 
@@ -589,46 +670,32 @@ Which outputs:
 bootstrap_form follows standard rails conventions so it's i18n-ready. See more
 here: http://guides.rubyonrails.org/i18n.html#translations-for-active-record-models
 
+## Other Tips and Edge Cases
+By their very nature, forms are extremely diverse. It would be extremely difficult to provide a gem that could handle every need. Here are some tips for handling edge cases.
+
+### Empty But Visible Labels
+Some third party plug-ins require an empty but visible label on an input control. The `hide_label` option generates a label that won't appear on the screen, but it's considered invisible and therefore doesn't work with such a plug-in. An empty label (e.g. `""`) causes the underlying Rails helper to generate a label based on the field's attribute's name.
+
+The solution is to use a zero-width character for the label, or some other "empty" HTML. For example:
+```
+label: "&#8203;".html_safe
+```
+or
+```
+label: "<span></span>".html_safe
+```
+
 ## Code Triage page
 
 http://www.codetriage.com/potenza/bootstrap_form
 
 ## Contributing
 
-We love pull requests! Here's a quick guide for contributing:
-
-1. Fork the repo.
-
-2. Install the required dependencies.
-
-```
-bundle install
-bundle exec appraisal install
-```
-
-3. Run the existing test suite:
-
-```
-$ bundle exec rake -f test/dummy/Rakefile db:create db:migrate RAILS_ENV=test
-$ bundle exec appraisal rake test
-```
-
-4. Add tests for your change.
-
-5. Add your changes and make your test(s) pass. Following the conventions you
-see used in the source will increase the chance that your pull request is
-accepted right away.
-
-6. Update the README if necessary.
-
-7. Add a line to the CHANGELOG for your bug fix or feature.
-
-8. Push to your fork and submit a pull request.
-
-## Contributors
-
-https://github.com/bootstrap-ruby/rails-bootstrap-forms/graphs/contributors
+We welcome contributions.
+If you're considering contributing to bootstrap_form,
+please review the [Contributing](/CONTRIBUTING.md)
+document first.
 
 ## License
 
-MIT License. Copyright 2012-2014 Stephen Potenza (https://github.com/potenza)
+MIT License. Copyright 2012-2018 Stephen Potenza (https://github.com/potenza)
